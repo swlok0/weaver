@@ -2,87 +2,111 @@
 
 這是一個自用的 Agent 功能模組管理 Monorepo，採用 pnpm workspace 架構。核心目的在於**將 LLM 接入、MCP 協議、原子工具（Tools）與複合工作流（Skills）進行扁平化、集中化管理**，作為個人其他終端應用的底層依賴庫。
 
-## Release Structure & Repo Split
+## Architecture and Release Scope
 
-`weaver` is organized as a split architecture to keep public capability surfaces small, stable, and reusable, while isolating private runtime and experimental work.
+`weaver` is the public MCP server repository. Its sole responsibility is to expose a stable, versioned MCP capability surface.
 
-### Public repos
+### Current scope
+This repository is responsible only for:
 
-#### `weaver-server`
-The public MCP capability repo.
+- MCP tools
+- MCP resources
+- MCP prompts
+- protocol implementation
+- public documentation
+- usage examples
 
-Responsibilities:
-- expose MCP tools / resources / prompts
-- implement the protocol surface
-- keep the capability API stable and versioned
-- provide examples and documentation for consumers
+### Out of scope
+This repository does not own:
 
-This repo should represent the public, repeatable surface of Weaver.
+- runtime orchestration
+- private host policy
+- client application logic
+- experimental prototypes
+- private routing or secrets management
 
-#### `weaver-contracts`
-The public contract repo.
-
-Responsibilities:
-- define schemas, manifests, and capability contracts
-- document versioning and naming rules
-- provide shared interface definitions for clients and hosts
-
-This repo should contain interface descriptions, not private runtime logic.
+Those responsibilities belong to separate repositories or private runtime layers.
 
 ---
 
-### Private repos
+## Repository Boundary
 
-#### `weaver-host`
-The private runtime / orchestration repo.
+### `weaver-server`
+Public capability repository.
 
 Responsibilities:
-- manage runtime execution
-- coordinate multiple MCP servers
-- handle secrets, routing, and deployment policy
-- integrate LLM clients and session management
+- define and expose MCP capabilities
+- keep the public interface stable
+- version the server surface
+- document how consumers should connect and use it
 
-This repo should not expose internal routing or secrets publicly.
+This repository should remain focused on the public MCP server surface only.
 
-#### `weaver-client`
-The private or optional demo client repo.
+### `weaver-contracts`
+Optional shared contract repository.
+
+Responsibilities:
+- schema definitions
+- manifests
+- capability contracts
+- naming and versioning rules
+
+This repository should contain interface definitions, not runtime orchestration.
+
+### `weaver-host`
+Private runtime repository.
+
+Responsibilities:
+- orchestration
+- deployment policy
+- routing
+- secrets
+- session management
+- LLM client integration
+
+This repository is not part of the public capability surface.
+
+### `weaver-client`
+Optional client repository.
 
 Responsibilities:
 - consume MCP capabilities
-- provide internal harnesses, agent clients, or demo apps
-- remain decoupled from private server internals
+- provide demo or harness applications
+- connect to public server endpoints
 
-This repo may be public only if it is a simple demo client with no sensitive runtime logic.
+This repository must not depend on private server internals.
 
 ---
 
-### Experimental space
+## Release Principle
 
-#### `labs/`
-The experimental and prototype area.
+The public release boundary for `weaver` is the MCP server surface only.
 
-Responsibilities:
-- early prototypes
-- failed experiments
-- architecture exploration
-- research branches and temporary demos
+That means:
+- public changes must be capability-oriented
+- internal orchestration must stay out of this repo
+- experiments must not be mixed into the release surface
+- reusable contracts may be extracted only if they directly support the server interface
 
-Anything proven useful in `labs/` should be distilled into:
+---
+
+## Experimental Work
+
+Experimental work belongs in separate prototype or lab areas, not in the public server repo.
+
+If an experiment proves useful, it may later be promoted into:
 - `weaver-server`
 - `weaver-contracts`
-- or a dedicated reusable tool/package
+- or a dedicated reusable package
 
 ---
 
-### Recommended release rule
+## Summary
 
-- Public capability belongs in `weaver-server`
-- Shared interface definitions belong in `weaver-contracts`
-- Runtime/orchestration belongs in `weaver-host`
-- Experimental work belongs in `labs/`
+`weaver` is intentionally narrow in scope.
 
-Do not mix public contract surface, private runtime behavior, and prototype code in the same release boundary.
-
+It is not a full agent platform, not a host runtime, and not a client harness.
+It is the public MCP server repository and should remain focused on that single responsibility.
 
 ---
 
