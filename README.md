@@ -2,16 +2,95 @@
 
 這是一個自用的 Agent 功能模組管理 Monorepo，採用 pnpm workspace 架構。核心目的在於**將 LLM 接入、MCP 協議、原子工具（Tools）與複合工作流（Skills）進行扁平化、集中化管理**，作為個人其他終端應用的底層依賴庫。
 
+## Release Structure & Repo Split
+
+`weaver` is organized as a split architecture to keep public capability surfaces small, stable, and reusable, while isolating private runtime and experimental work.
+
+### Public repos
+
+#### `weaver-server`
+The public MCP capability repo.
+
+Responsibilities:
+- expose MCP tools / resources / prompts
+- implement the protocol surface
+- keep the capability API stable and versioned
+- provide examples and documentation for consumers
+
+This repo should represent the public, repeatable surface of Weaver.
+
+#### `weaver-contracts`
+The public contract repo.
+
+Responsibilities:
+- define schemas, manifests, and capability contracts
+- document versioning and naming rules
+- provide shared interface definitions for clients and hosts
+
+This repo should contain interface descriptions, not private runtime logic.
+
+---
+
+### Private repos
+
+#### `weaver-host`
+The private runtime / orchestration repo.
+
+Responsibilities:
+- manage runtime execution
+- coordinate multiple MCP servers
+- handle secrets, routing, and deployment policy
+- integrate LLM clients and session management
+
+This repo should not expose internal routing or secrets publicly.
+
+#### `weaver-client`
+The private or optional demo client repo.
+
+Responsibilities:
+- consume MCP capabilities
+- provide internal harnesses, agent clients, or demo apps
+- remain decoupled from private server internals
+
+This repo may be public only if it is a simple demo client with no sensitive runtime logic.
+
+---
+
+### Experimental space
+
+#### `labs/`
+The experimental and prototype area.
+
+Responsibilities:
+- early prototypes
+- failed experiments
+- architecture exploration
+- research branches and temporary demos
+
+Anything proven useful in `labs/` should be distilled into:
+- `weaver-server`
+- `weaver-contracts`
+- or a dedicated reusable tool/package
+
+---
+
+### Recommended release rule
+
+- Public capability belongs in `weaver-server`
+- Shared interface definitions belong in `weaver-contracts`
+- Runtime/orchestration belongs in `weaver-host`
+- Experimental work belongs in `labs/`
+
+Do not mix public contract surface, private runtime behavior, and prototype code in the same release boundary.
+
+
 ---
 
 ## 📂 扁平化目錄與職責邊界
 
 ```text
 weaver/
-├── llm/          # 大模型適配：統一封裝 Provider API、Token 計算與 Stream 處理
-├── mcp/          # 協議層：處理標準 JSON-RPC 封裝與 Context 注入
-├── tools/        # 原子工具庫：無狀態、純函數、不含 LLM 推理的底層 I/O 操作
-└── skills/       # 複合技能包：有狀態、包含 System Prompt、串聯多個 Tools 的工作流
+...
 
 ```
 
