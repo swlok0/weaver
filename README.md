@@ -4,17 +4,15 @@
 
 ## Architecture and Release Scope
 
-`weaver` is the public MCP server repository. Its sole responsibility is to expose a stable, versioned MCP capability surface.
+`weaver` is the public capability and integration layer for a separately operated Private Agent. Its MVP connects to provider-hosted L3 retrieval and L4 tool/MCP capabilities; the private runtime remains responsible for identity, authorization, secrets, and private data. Weaver does not currently host a general-purpose MCP endpoint.
 
 ### Current scope
-This repository is responsible only for:
+This repository is responsible for:
 
-- MCP tools
-- MCP resources
-- MCP prompts
-- protocol implementation
-- public documentation
-- usage examples
+- MCP host configuration and provider integration examples
+- reusable capability contracts and adapters when implemented
+- public documentation and non-sensitive conformance tests
+- experiments clearly labeled as prototypes
 
 ### Out of scope
 This repository does not own:
@@ -22,7 +20,6 @@ This repository does not own:
 - runtime orchestration
 - private host policy
 - client application logic
-- experimental prototypes
 - private routing or secrets management
 
 Those responsibilities belong to separate repositories or private runtime layers.
@@ -31,16 +28,15 @@ Those responsibilities belong to separate repositories or private runtime layers
 
 ## Repository Boundary
 
-### `weaver-server`
-Public capability repository.
+### Weaver (this repository)
+Public capability and integration layer.
 
 Responsibilities:
-- define and expose MCP capabilities
-- keep the public interface stable
-- version the server surface
-- document how consumers should connect and use it
+- define reusable capability and adapter contracts
+- connect MCP-compatible hosts to provider capabilities
+- document permissions, behavior, and supported interfaces
 
-This repository should remain focused on the public MCP server surface only.
+This repository may include client configuration for official provider servers; that does not make Weaver a hosted MCP service. Prototype code under `labs/` is not part of the production capability surface.
 
 ### `weaver-contracts`
 Optional shared contract repository.
@@ -80,24 +76,23 @@ This repository must not depend on private server internals.
 
 ## Release Principle
 
-The public release boundary for `weaver` is the MCP server surface only.
+The public release boundary for `weaver` is reusable capability contracts, adapters, and their supporting documentation.
 
 That means:
 - public changes must be capability-oriented
 - internal orchestration must stay out of this repo
 - experiments must not be mixed into the release surface
-- reusable contracts may be extracted only if they directly support the server interface
+- reusable contracts may be extracted only if they directly support a published capability
 
 ---
 
 ## Experimental Work
 
-Experimental work belongs in separate prototype or lab areas, not in the public server repo.
+Experimental work belongs in separate prototype or lab areas, not in the stable capability surface.
 
 If an experiment proves useful, it may later be promoted into:
-- `weaver-server`
+- a reusable capability package
 - `weaver-contracts`
-- or a dedicated reusable package
 
 ---
 
@@ -105,8 +100,11 @@ If an experiment proves useful, it may later be promoted into:
 
 `weaver` is intentionally narrow in scope.
 
-It is not a full agent platform, not a host runtime, and not a client harness.
-It is the public MCP server repository and should remain focused on that single responsibility.
+It is a public capability and integration layer, not a full agent platform, a private host runtime, a credential broker, or a store for private user data.
+
+For a beginner-friendly guide to connecting a private MCP-compatible Agent to GitHub, see [GitHub MCP Quickstart](docs/github-mcp-quickstart.md). The guide uses GitHub's official MCP Server; it does not require sharing credentials with Weaver.
+
+The MVP boundary, acceptance criteria, and provider evaluation are documented in [Weaver MVP](docs/mvp.md) and the [Provider Catalog](docs/provider-catalog.md). The workspace configuration connects VS Code to GitHub's official MCP server in read-only mode.
 
 ---
 

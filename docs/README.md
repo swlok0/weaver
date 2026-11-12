@@ -28,3 +28,9 @@ Architecture, decisions, and evolution records.
 
 Main architecture guide is in the root directory:
 - `/AGENT_MONOREPO_GUIDE.md` - Complete monorepo architecture guide
+
+## 入門指南 / Getting Started
+
+- [`github-mcp-quickstart.md`](./github-mcp-quickstart.md) - 以唯讀方式將 MCP 相容的 Agent 連接到 GitHub，包含 OAuth、Fine-grained PAT 與安全起步建議。
+- [`mvp.md`](./mvp.md) - Weaver 的 L3/L4 MVP 範圍、GitHub 官方 MCP 設定、私有 runtime 邊界與驗收條件。
+- [`provider-catalog.md`](./provider-catalog.md) - GitHub、Meta、X 的官方能力與 adapter 可行性盤點。
