@@ -367,5 +367,3 @@ gantt
 * **Markdown 原生閱讀**：GitHub、GitLab、Notion、Obsidian、Typora 與 VS Code 均支援直接渲染為向量 SVG 圖表。
 * **匯出高解析 PDF**：使用 Typora「匯出 PDF」、VS Code `Markdown PDF` 套件，或透過 `pandoc whitepaper.md -F mermaid-filter -o whitepaper.pdf` 即可直接生成可印刷向量圖 PDF。
 * **匯出 PowerPoint（PPTX）**：使用 **Marp** 或 **Slidev**（原生支援 Mermaid 區塊並一鍵匯出 `.pptx`），或透過官方 CLI `mmdc -i whitepaper.md -o diagrams.svg -b transparent` 批量匯出透明背景向量圖貼入簡報。
-
-需要我將這份包含 Mermaid 視覺化圖表的白皮書進一步整理成簡報嗎？
