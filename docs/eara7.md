@@ -1,11 +1,13 @@
 [ID: MAIN | T: 2026-11-12T12:55:00+08:00 | I: 8/? | Topic: Agent架構演進 | L: L1]
 
+---
+
 # 技術白皮書：EARA-7 企業級智能體七層參考架構與五大治理象限
 
 **Enterprise Agent Reference Architecture (EARA-7) & Five Governance Quadrants**
 
 * **文件編號**：ARC-WP-EARA7-2026
-* **架構版本**：v1.0（跨行業通用標準版）
+* **架構版本**：v1.2（跨行業通用標準版）
 * **適用對象**：企業技術長（CTO）、企業架構師（Enterprise Architect）、AI 平台工程團隊、資訊安全與合規治理委員會
 * **架構定位**：供應商中立（Vendor-Agnostic）、雲原生與混合雲通用的生產級智能體系統參考藍圖
 
@@ -31,6 +33,27 @@
 
 在進入具體分層規範前，企業需明確自身系統所處的工程階段。EARA-7 將企業智能體的演進劃分為四個成熟度等級：
 
+```mermaid
+flowchart LR
+    L1["<b>Level 1：基礎對話層</b><br/>Wrapper & Prompting<br/>━━━━━━━━━━━━━━<br/>靜態提示詞封裝<br/><i>盲區：無私有知識、易產生幻覺</i>"]
+    L2["<b>Level 2：知識增強層</b><br/>RAG-Enabled Assistant<br/>━━━━━━━━━━━━━━<br/>Vector DB + 知識檢索<br/><i>盲區：僅限唯讀問答、無法執行</i>"]
+    L3["<b>Level 3：自主行動層</b><br/>Tool-Enabled Agent<br/>━━━━━━━━━━━━━━<br/>MCP 接入業務系統 API<br/><i>盲區：缺乏權限隔離與安全護欄</i>"]
+    L4["<b>Level 4：企業治理層</b><br/>EARA-7 Governed Agent<br/>━━━━━━━━━━━━━━<br/>零信任安全・動態路由・測評閉環<br/><b>★ 生產環境目標終態</b>"]
+
+    L1 -->|"接入私有知識庫"| L2
+    L2 -->|"賦予工具執行權"| L3
+    L3 -->|"導入七層治理基線"| L4
+
+    classDef stageBasic fill:#f8fafc,stroke:#94a3b8,stroke-width:1.5px,color:#0f172a;
+    classDef stageWarn fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#78350f;
+    classDef stageTarget fill:#eff6ff,stroke:#1d4ed8,stroke-width:2.5px,color:#1e3a8a;
+
+    class L1,L2 stageBasic;
+    class L3 stageWarn;
+    class L4 stageTarget;
+
+```
+
 | 成熟度等級 | 架構形態 | 核心能力特徵 | 典型生產環境盲區 |
 | --- | --- | --- | --- |
 | **Level 1：基礎對話層**<br>
@@ -54,53 +77,72 @@ EARA-7 採用「能力演進由內向外、流量防禦由外向內」的雙向�
 
 ### 3.1 標準運行期架構拓撲圖（Runtime Pipeline）
 
-```text
-====================================================================================
-           EARA-7：企業級智能體七層參考架構 (Enterprise Agent Reference Architecture)
-====================================================================================
+```mermaid
+flowchart TB
+    User(["<b>多渠道終端入口</b><br/>Web / IM / 業務系統 API / 外部事件<br/><i>攜帶 User Identity Token & Session Context</i>"])
 
-   [ 多渠道終端入口：Web / 企業通訊軟體 / 業務系統 API / 外部事件觸發 ]
-                              │  (攜帶 User Identity Token & Session Context)
-                              ▼
-+----------------------------------------------------------------------------------+
-| L6 流量與成本優化層 (Traffic & FinOps Layer)                                      |
-|    ├── Semantic Cache (語意快取：高頻重複查詢向量比對，零模型推算直接返回)         |
-|    └── Model Router   (動態路由：簡單意圖分發輕量小模型 / 複雜推理升級旗艦大模型)  |
-+----------------------------------------------------------------------------------+
-                              │
-                              ▼
-+----------------------------------------------------------------------------------+
-| L5 雙向安全護欄層 - 輸入側 (Input Guardrails & Structural Isolation)              |
-|    └── Prompt Injection Scanner (嚴格隔離「系統策略」與「外部非信任資料」)       |
-+----------------------------------------------------------------------------------+
-                              │
-                              ▼
-+----------------------------------------------------------------------------------+
-| L4 身份與權限治理層 (Identity & Access Governance Layer)                          |
-|    └── Zero-Trust Context Injector (綁定當前調用者 RBAC/ABAC 權限，禁止系統提權) |
-+----------------------------------------------------------------------------------+
-                              │
-                              ▼
-+----------------------------------------------------------------------------------+
-| 核心認知與執行引擎 (Agent Runtime Core)                                           |
-|    ├── L1 基礎推理與策略層 (Inference & Policy)   ：多模型網關解耦 + 版本化策略  |
-|    ├── L2 領域知識檢索層   (Knowledge & Grounding)：權限過濾檢索 + 強制來源溯源  |
-|    └── L3 標準工具執行層   (Tool & Action / MCP)  ：讀寫分離 + 高風險人工審批    |
-+----------------------------------------------------------------------------------+
-                              │
-                              ▼
-+----------------------------------------------------------------------------------+
-| L5 雙向安全護欄層 - 輸出側 (Output Guardrails & DLP)                              |
-|    └── PII Redaction & Compliance Filter (敏感個資自動遮罩、輸出合規性最終校驗)    |
-+----------------------------------------------------------------------------------+
-                              │
-                              ▼
-                      [ 合規響應返回終端用戶 ]
+    subgraph L6["L6 流量與成本優化層 (Traffic & FinOps Layer)"]
+        direction LR
+        Cache{"<b>Semantic Cache</b><br/>語意快取比對"}
+        Router["<b>Model Router</b><br/>輕量小模型 SLM / 旗艦大模型 LLM 分流"]
+        Cache -->|"未命中 (Cache Miss)"| Router
+    end
 
-====================================================================================
-   縱向貫穿全生命週期：L7 可觀測與品質運維層 (Observability & LLMOps Layer)
-   [ Distributed Tracing 全鏈路審計 ] | [ Config-as-Code 版本庫 ] | [ CI/CD 測評門禁 ]
-====================================================================================
+    subgraph L5_IN["L5 雙向安全護欄層 - 輸入側 (Input Guardrails)"]
+        InGuard["<b>Prompt Injection Scanner</b><br/>結構化隔離系統策略與外部非信任資料"]
+    end
+
+    subgraph L4["L4 身份與權限治理層 (Identity & Access Governance)"]
+        Auth["<b>Zero-Trust Context Injector</b><br/>透傳終端用戶 OAuth / RBAC 令牌（嚴禁系統提權）"]
+    end
+
+    subgraph CORE["核心認知與執行引擎 (Agent Runtime Core)"]
+        direction LR
+        L1["<b>L1 基礎推理與策略層</b><br/>多模型網關解耦<br/>版本化 System Policy"]
+        L2["<b>L2 領域知識檢索層</b><br/>權限過濾向量檢索<br/>強制來源段落溯源"]
+        L3["<b>L3 標準工具執行層</b><br/>MCP 讀寫分離執行<br/>高風險動作 HITL 審批"]
+        L1 <--> L2
+        L1 <--> L3
+    end
+
+    subgraph L5_OUT["L5 雙向安全護欄層 - 輸出側 (Output Guardrails & DLP)"]
+        OutGuard["<b>PII Redaction & Compliance Filter</b><br/>敏感個資自動遮罩・合規性最終校驗"]
+    end
+
+    Resp(["<b>合規響應返回終端用戶</b>"])
+
+    subgraph L7["L7 可觀測與品質運維層 (Observability & LLMOps — 縱向貫穿全生命週期)"]
+        direction LR
+        Trace["<b>Distributed Tracing</b><br/>全局 Trace ID 全鏈路審計"]
+        Git["<b>Config-as-Code</b><br/>Prompt 與策略資產版本庫"]
+        Eval["<b>CI/CD Eval Gate</b><br/>黃金測試集自動化回歸門禁"]
+    end
+
+    User --> Cache
+    Cache -->|"命中 (Cache Hit) 零推算返回"| Resp
+    Router --> InGuard
+    InGuard --> Auth
+    Auth --> CORE
+    CORE --> OutGuard
+    OutGuard --> Resp
+
+    L7 -.->|"全鏈路追蹤・版本控管・上線前回歸驗證"| L6
+    L7 -.-> L5_IN
+    L7 -.-> L4
+    L7 -.-> CORE
+    L7 -.-> L5_OUT
+
+    classDef endpoint fill:#0f172a,stroke:#0f172a,stroke-width:2px,color:#ffffff;
+    classDef gateway fill:#f8fafc,stroke:#475569,stroke-width:1.5px,color:#0f172a;
+    classDef security fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#78350f;
+    classDef coreNode fill:#eff6ff,stroke:#1d4ed8,stroke-width:2px,color:#1e3a8a;
+    classDef opsNode fill:#f0fdf4,stroke:#15803d,stroke-width:1.5px,color:#14532d;
+
+    class User,Resp endpoint;
+    class Cache,Router gateway;
+    class InGuard,Auth,OutGuard security;
+    class L1,L2,L3 coreNode;
+    class Trace,Git,Eval opsNode;
 
 ```
 
@@ -155,6 +197,36 @@ EARA-7 採用「能力演進由內向外、流量防禦由外向內」的雙向�
 
 為便於企業在組織架構中明確責任歸屬，EARA-7 的七個技術層級可收斂為相互獨立、完全窮盡（MECE）的**五大治理象限**，分別對接企業內部的不同專業團隊：
 
+```mermaid
+flowchart LR
+    subgraph Q1["象限一：認知與知識象限"]
+        M1["<b>L1 基礎推理與策略層</b><br/><b>L2 領域知識檢索層</b><br/>━━━━━━━━━━━━<br/>歸屬：AI 演算法與知識團隊"]
+    end
+    subgraph Q2["象限二：行動與執行象限"]
+        M2["<b>L3 標準工具執行層</b><br/>━━━━━━━━━━━━<br/>歸屬：業務系統整合團隊"]
+    end
+    subgraph Q3["象限三：安全與合規象限"]
+        M3["<b>L4 身份與權限治理層</b><br/><b>L5 雙向安全護欄層</b><br/>━━━━━━━━━━━━<br/>歸屬：InfoSec 與法務合規"]
+    end
+    subgraph Q4["象限四：成本與效能象限"]
+        M4["<b>L6 流量與成本優化層</b><br/>━━━━━━━━━━━━<br/>歸屬：雲基礎設施與 FinOps"]
+    end
+    subgraph Q5["象限五：運維與演進象限"]
+        M5["<b>L7 可觀測與品質運維層</b><br/>━━━━━━━━━━━━<br/>歸屬：平台工程與 SRE / QA"]
+    end
+
+    Q1 --- Q2 --- Q3 --- Q4 --- Q5
+
+    classDef quadBox fill:#f8fafc,stroke:#1d4ed8,stroke-width:1.5px,color:#0f172a;
+    classDef quadSec fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#78350f;
+    classDef quadOps fill:#f0fdf4,stroke:#15803d,stroke-width:1.5px,color:#14532d;
+
+    class M1,M2,M4 quadBox;
+    class M3 quadSec;
+    class M5 quadOps;
+
+```
+
 ### 4.1 五大治理象限與組織職責映射表
 
 | 治理象限 | 納管層級 | 責任歸屬團隊 | 核心治理目標 | 關鍵驗收指標（KPI） |
@@ -205,6 +277,35 @@ EARA-7 採用「能力演進由內向外、流量防禦由外向內」的雙向�
 
 EARA-7 的核心工程價值在於實現「底座能力平台化、業務場景插件化」，使企業無需為每個部門重複建設基礎設施：
 
+```mermaid
+flowchart TB
+    subgraph PLUGINS["業務領域插件包 (Domain Plugin Packages — 業務線按需配置 L2 + L3)"]
+        direction LR
+        P1["<b>金融與財稅領域</b><br/>合規法規庫 (L2)<br/>帳務與報銷預審 MCP (L3)"]
+        P2["<b>供應鏈與製造領域</b><br/>設備手冊與庫存規範 (L2)<br/>ERP 採購補貨工單 MCP (L3)"]
+        P3["<b>客戶服務與營運領域</b><br/>產品政策與售後條款 (L2)<br/>訂單查詢與退換貨 MCP (L3)"]
+        P4["<b>人力資源與內部 IT</b><br/>員工手冊與運維知識庫 (L2)<br/>休假與權限開通 MCP (L3)"]
+    end
+
+    subgraph PLATFORM["企業級共享平台底座 (Shared Platform Core — 中央 AI 平台團隊統一維運)"]
+        direction LR
+        B1["<b>L1</b><br/>多模型網關"]
+        B4["<b>L4</b><br/>RBAC 權限透傳"]
+        B5["<b>L5</b><br/>雙向安全護欄"]
+        B6["<b>L6</b><br/>快取與模型路由"]
+        B7["<b>L7</b><br/>追蹤與測評門禁"]
+    end
+
+    P1 & P2 & P3 & P4 ==>|"標準化插件介面即插即用 (Plug-and-Play)"| PLATFORM
+
+    classDef pluginStyle fill:#eff6ff,stroke:#2563eb,stroke-width:1.5px,color:#1e3a8a;
+    classDef baseStyle fill:#0f172a,stroke:#334155,stroke-width:1.5px,color:#f8fafc;
+
+    class P1,P2,P3,P4 pluginStyle;
+    class B1,B4,B5,B6,B7 baseStyle;
+
+```
+
 * **企業級共享底座（Shared Platform Core — L1, L4, L5, L6, L7）**：
 由中央 AI 平台團隊統一建設並維護。多模型網關、RBAC 身份鑑權、雙向安全護欄、語意快取、模型路由與 CI/CD 測評流水線作為標準基礎設施服務（Infrastructure-as-a-Service）對全公司開放。
 * **業務領域插件包（Domain Plugin Packages — L2 + L3）**：
@@ -220,7 +321,31 @@ EARA-7 的核心工程價值在於實現「底座能力平台化、業務場景�
 
 ## 6. 分階段落地路線圖（Phased Implementation Roadmap）
 
-建議企業採取漸進式演進策略，分三個階段完成 EARA-7 標準架構的部署：
+建議企業採取漸進式演進策略，分三個階段（共 12 週）完成 EARA-7 標準架構的部署：
+
+```mermaid
+gantt
+    title EARA-7 企業級智能體標準架構 12 週分階段落地路線圖
+    dateFormat YYYY-MM-DD
+    axisFormat %m/%d
+
+    section 第一階段：認知與追蹤底座 (W1–W4)
+    L1 統一多模型網關與 Prompt 版本庫      :a1, 2026-01-05, 14d
+    L2 業務知識庫向量化與強制溯源機制      :a2, after a1, 14d
+    L7 全局 Trace ID 全鏈路日誌追蹤接入    :a3, 2026-01-05, 28d
+
+    section 第二階段：受控工具與零信任 (W5–W8)
+    L3 唯讀型 MCP 工具分批接入與驗證       :b1, after a2, 14d
+    L4 用戶身份上下文透傳 (OAuth / RBAC)   :b2, after a2, 14d
+    L5 輸入隔離與輸出端 DLP 脫敏護欄       :b3, after b1, 14d
+    L3 寫入型高危工具人工審批門禁 (HITL)   :b4, after b1, 14d
+
+    section 第三階段：FinOps 與測評閉環 (W9–W12)
+    L6 高頻問答語意快取 (Semantic Cache)   :c1, after b3, 14d
+    L6 輕量意圖分類器與大小模型動態路由    :c2, after c1, 14d
+    L7 黃金測試集沉澱與 CI/CD 測評門禁上線 :c3, after b3, 28d
+
+```
 
 1. **第一階段（第 1–4 週）：夯實認知底座與可觀測基礎（L1 + L2 + L7 基礎追蹤）**
 建立統一模型網關與 Prompt 版本庫，完成核心業務知識庫的向量化與溯源引用機制，並自第一天起接入全局 `Trace ID` 日誌追蹤，確保所有問答行為有據可查。
@@ -232,3 +357,15 @@ EARA-7 的核心工程價值在於實現「底座能力平台化、業務場景�
 ---
 
 企業級智能體的競爭壁壘，從來不在於單一模型的參數規模，而在於組織將機率性的大語言模型封裝為確定性、可治理工程系統的能力。透過 EARA-7 七層參考架構與五大治理象限的系統化約束，企業得以在釋放智能體自主執行潛力的同時，牢牢守住安全合規、財務成本與系統可靠性的底線，實現跨行業、可規模化複製的數位勞動力轉型。
+
+---
+
+### 附錄：Markdown / PDF / PPT 跨平台圖表通用輸出指南
+
+本白皮書內含的 5 張標準 Mermaid 視覺化圖表（`flowchart` 與 `gantt`）已採用無框線文字、高對比配色與標準引號封裝，可直接用於以下跨格式輸出工作流：
+
+* **Markdown 原生閱讀**：GitHub、GitLab、Notion、Obsidian、Typora 與 VS Code 均支援直接渲染為向量 SVG 圖表。
+* **匯出高解析 PDF**：使用 Typora「匯出 PDF」、VS Code `Markdown PDF` 套件，或透過 `pandoc whitepaper.md -F mermaid-filter -o whitepaper.pdf` 即可直接生成可印刷向量圖 PDF。
+* **匯出 PowerPoint（PPTX）**：使用 **Marp** 或 **Slidev**（原生支援 Mermaid 區塊並一鍵匯出 `.pptx`），或透過官方 CLI `mmdc -i whitepaper.md -o diagrams.svg -b transparent` 批量匯出透明背景向量圖貼入簡報。
+
+需要我將這份包含 Mermaid 視覺化圖表的白皮書進一步整理成簡報嗎？
